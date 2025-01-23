@@ -1,11 +1,12 @@
-import pygame
 import os
 import sys
+
+import pygame
 
 pygame.init()
 FPS = 50
 clock = pygame.time.Clock()
-size = WIDTH, HEIGHT = 500, 500
+size = WIDTH, HEIGHT = 1400, 800
 screen = pygame.display.set_mode(size)
 screen.fill((255, 255, 255))
 
@@ -106,22 +107,20 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
         self.pos = x, y
 
-
 def move_map(player, movement):
     x, y = player.pos
     if movement == 'up':
-        print(level[y - 1][x])
         if (level[y - 2][x] == '.' or level[y - 2][x] == '@') and level[y + 1][x] == '#':
-            print(True)
-            player.move(x, y - 3)
+            player.move(x, y - 2)
     if movement == 'down':
         if level[y + 1][x] == '.' or level[y + 1][x] == '@':
             player.move(x, y + 1)
     if movement == 'left':
-        if level[y][x - 1] == '.' or level[y][x - 1] == '@':
+        print(level[y - 1][x])
+        if (level[y][x - 1] == '.' or level[y][x - 1] == '@') and level[y + 1][x] != '.':
             player.move(x - 1, y)
     if movement == 'right':
-        if level[y][x + 1] == '.' or level[y][x + 1] == '@':
+        if (level[y][x + 1] == '.' or level[y][x + 1] == '@') and level[y + 1][x] != '.':
             player.move(x + 1, y)
 
 
@@ -143,17 +142,31 @@ def generate_level(level):
 
 player, level_x, level_y = generate_level(load_level('lvl_1.txt'))
 running = True
+fall_delay = 300
+fall_event = pygame.USEREVENT + 1
+pygame.time.set_timer(fall_event, fall_delay)
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        keys = pygame.key.get_pressed()
+        if event.type == fall_event:
+            move_map(player, 'down')
         if event.type == pygame.MOUSEBUTTONDOWN:
             move_map(player, 'up')
-    move_map(player, 'right')
-    move_map(player, 'down')
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_d:
+                move_map(player, 'right')
+                if event.type == pygame.MOUSEBUTTONDOWN and keys[pygame.K_d] == 1:
+                    move_map(player, 'up')
+            elif event.key == pygame.K_a:
+                move_map(player, 'left')
+                if event.type == pygame.MOUSEBUTTONDOWN and keys[pygame.K_d] == 1:
+                    move_map(player, 'left')
+    x, y = player.pos
     screen.fill((0, 0, 0))
     all_sprites.draw(screen)
     player_group.draw(screen)
     pygame.display.flip()
-    clock.tick(2)
+    clock.tick(200)
 pygame.quit()
