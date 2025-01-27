@@ -73,7 +73,8 @@ start_screen()
 
 tile_images = {
     'wall': load_image('box.png'),
-    'empty': load_image('sky.jpg')
+    'empty': load_image('sky.jpg'),
+    'door': load_image('door.jpg')
 }
 player_image = load_image('player.png')
 
@@ -107,66 +108,89 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(tile_width * x + 15, tile_height * y + 5)
         self.pos = x, y
 
+
 def move_map(player, movement):
     x, y = player.pos
     if movement == 'up':
-        if (level[y - 2][x] == '.' or level[y - 2][x] == '@') and level[y + 1][x] == '#':
+        if (level[y - 3][x] == '.' or level[y - 3][x] == '@' or level[y - 3][x] == '&') and level[y + 1][x] == '#' and (
+                level[y - 2][x] == '.' or level[y - 2][x] == '@' or level[y - 2][x] == '&') and (
+                level[y - 1][x] == '.' or level[y - 1][x] == '@' or level[y - 1][x] == '&') and (
+                level[y - 4][x] == '.' or level[y - 4][x] == '@' or level[y - 4][x] == '&'):
+            player.move(x, y - 4)
+        elif (level[y - 3][x] == '.' or level[y - 3][x] == '@' or level[y - 3][x] == '&') and level[y + 1][x] == '#' and (
+                level[y - 2][x] == '.' or level[y - 2][x] == '@' or level[y - 2][x] == '&') and (
+                level[y - 1][x] == '.' or level[y - 1][x] == '@' or level[y - 1][x] == '&'):
+            player.move(x, y - 3)
+        elif level[y + 1][x] == '#' and (level[y - 2][x] == '.' or level[y - 2][x] == '@' or level[y - 2][x] == '&') and (
+                level[y - 1][x] == '.' or level[y - 1][x] == '@' or level[y - 1][x] == '&') and level[y + 1][x] == '#':
             player.move(x, y - 2)
+        elif (level[y - 1][x] == '.' or level[y - 1][x] == '@' or level[y - 1][x] == '&') and level[y + 1][x] == '#':
+            player.move(x, y - 1)
     if movement == 'down':
-        if level[y + 1][x] == '.' or level[y + 1][x] == '@':
+        if level[y + 1][x] == '.' or level[y + 1][x] == '@' or level[y + 1][x] == '&':
             player.move(x, y + 1)
     if movement == 'left':
-        print(level[y - 1][x])
-        if (level[y][x - 1] == '.' or level[y][x - 1] == '@') and level[y + 1][x] != '.':
+        if level[y][x - 1] == '.' or level[y][x - 1] == '@' or level[y][x - 1] == '&':
             player.move(x - 1, y)
     if movement == 'right':
-        if (level[y][x + 1] == '.' or level[y][x + 1] == '@') and level[y + 1][x] != '.':
+        if level[y][x + 1] == '.' or level[y][x + 1] == '@' or level[y + 1][x] == '&':
             player.move(x + 1, y)
+    if level[y][x] == '&':
+        start_screen()
 
 
 def generate_level(level):
     new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
-            if level[y][x] == '.':
-                Tile('empty', x, y)
-            elif level[y][x] == '#':
-                Tile('wall', x, y)
-                # добавим спрайт в группу
-            elif level[y][x] == '@':
-                Tile('empty', x, y)
-                new_player = Player(x, y)
+            if y != 0:
+                if level[y][x] == '.':
+                    Tile('empty', x, y)
+                elif level[y][x] == '#':
+                    Tile('wall', x, y)
+                    # добавим спрайт в группу
+                elif level[y][x] == '@':
+                    Tile('empty', x, y)
+                    new_player = Player(x, y)
+                elif level[y][x] == '&':
+                    Tile('door', x, y)
     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 
 
 player, level_x, level_y = generate_level(load_level('lvl_1.txt'))
 running = True
-fall_delay = 300
+fall_delay = 200
 fall_event = pygame.USEREVENT + 1
 pygame.time.set_timer(fall_event, fall_delay)
+run_delay = 400
+run_event = pygame.USEREVENT + 2
+pygame.time.set_timer(run_event, run_delay)
+run_shift_delay = 300
+run_shift_event = pygame.USEREVENT + 3
+pygame.time.set_timer(run_shift_event, run_shift_delay)
 while running:
     for event in pygame.event.get():
+        keys = pygame.key.get_pressed()
         if event.type == pygame.QUIT:
             running = False
-        keys = pygame.key.get_pressed()
         if event.type == fall_event:
             move_map(player, 'down')
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            move_map(player, 'up')
+        if keys[pygame.K_LSHIFT] == 1 and keys[pygame.K_d] == 1 and event.type == run_shift_event:
+            move_map(player, 'right')
+        if keys[pygame.K_LSHIFT] == 1 and keys[pygame.K_a] == 1 and event.type == run_shift_event:
+            move_map(player, 'left')
+        if keys[pygame.K_d] == 1 and event.type == run_event:
+            move_map(player, 'right')
+        if keys[pygame.K_a] == 1 and event.type == run_event:
+            move_map(player, 'left')
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_d:
-                move_map(player, 'right')
-                if event.type == pygame.MOUSEBUTTONDOWN and keys[pygame.K_d] == 1:
-                    move_map(player, 'up')
-            elif event.key == pygame.K_a:
-                move_map(player, 'left')
-                if event.type == pygame.MOUSEBUTTONDOWN and keys[pygame.K_d] == 1:
-                    move_map(player, 'left')
+            if event.key == pygame.K_SPACE:
+                move_map(player, 'up')
     x, y = player.pos
     screen.fill((0, 0, 0))
     all_sprites.draw(screen)
     player_group.draw(screen)
     pygame.display.flip()
-    clock.tick(200)
+    clock.tick(500)
 pygame.quit()
