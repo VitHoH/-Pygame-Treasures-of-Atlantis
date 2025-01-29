@@ -24,13 +24,15 @@ def load_level(filename):
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
 
 
-def load_image(name, colorkey=None):
+def load_image(name, colorkey=None, scale=None):
     fullname = os.path.join('data', name)
     # если файл не существует, то выходим
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
         sys.exit()
     image = pygame.image.load(fullname)
+    if scale:
+        image = pygame.transform.scale(image, (50, 50))
     return image
 
 
@@ -74,7 +76,8 @@ start_screen()
 tile_images = {
     'wall': load_image('box.png'),
     'empty': load_image('sky.jpg'),
-    'door': load_image('door.jpg')
+    'door': load_image('door.jpg'),
+    'ship': load_image('ship.png', scale=True)
 }
 player_image = load_image('player.png')
 
@@ -127,14 +130,23 @@ def move_map(player, movement):
         elif (level[y - 1][x] == '.' or level[y - 1][x] == '@' or level[y - 1][x] == '&') and level[y + 1][x] == '#':
             player.move(x, y - 1)
     if movement == 'down':
-        if level[y + 1][x] == '.' or level[y + 1][x] == '@' or level[y + 1][x] == '&':
-            player.move(x, y + 1)
+        if level[y + 1][x] == '.' or level[y + 1][x] == '@' or level[y + 1][x] == '&' or level[y + 1][x] == '!':
+            if level[y + 1][x] == '!':
+                start_screen()
+            else:
+                player.move(x, y + 1)
     if movement == 'left':
-        if level[y][x - 1] == '.' or level[y][x - 1] == '@' or level[y][x - 1] == '&':
-            player.move(x - 1, y)
+        if level[y][x - 1] == '.' or level[y][x - 1] == '@' or level[y][x - 1] == '&' or level[y][x - 1] == '!':
+            if level[y][x - 1] == '!':
+                start_screen()
+            else:
+                player.move(x - 1, y)
     if movement == 'right':
-        if level[y][x + 1] == '.' or level[y][x + 1] == '@' or level[y + 1][x] == '&':
-            player.move(x + 1, y)
+        if level[y][x + 1] == '.' or level[y][x + 1] == '@' or level[y][x + 1] == '&' or level[y][x + 1] == '!':
+            if level[y][x + 1] == '!':
+                start_screen()
+            else:
+                player.move(x + 1, y)
     if level[y][x] == '&':
         start_screen()
 
@@ -154,6 +166,8 @@ def generate_level(level):
                     new_player = Player(x, y)
                 elif level[y][x] == '&':
                     Tile('door', x, y)
+                elif level[y][x] == '!':
+                    Tile('ship', x, y)
     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 
