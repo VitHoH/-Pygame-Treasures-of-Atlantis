@@ -33,6 +33,13 @@ def load_image(name, colorkey=None, scale=None):
     image = pygame.image.load(fullname)
     if scale:
         image = pygame.transform.scale(image, (50, 50))
+    if colorkey is not None:
+        image = image.convert()
+        if colorkey == -1:
+            colorkey = image.get_at((0, 0))
+            print(colorkey)
+    else:
+        image = image.convert_alpha()
     return image
 
 
@@ -76,7 +83,7 @@ start_screen()
 tile_images = {
     'wall': load_image('box.png'),
     'empty': load_image('sky.jpg'),
-    'door': load_image('door.jpg'),
+    'door': load_image('door.png'),
     'ship': load_image('ship.png', scale=True)
 }
 player_image = load_image('player.png')
@@ -120,11 +127,13 @@ def move_map(player, movement):
                 level[y - 1][x] == '.' or level[y - 1][x] == '@' or level[y - 1][x] == '&') and (
                 level[y - 4][x] == '.' or level[y - 4][x] == '@' or level[y - 4][x] == '&'):
             player.move(x, y - 4)
-        elif (level[y - 3][x] == '.' or level[y - 3][x] == '@' or level[y - 3][x] == '&') and level[y + 1][x] == '#' and (
+        elif (level[y - 3][x] == '.' or level[y - 3][x] == '@' or level[y - 3][x] == '&') and level[y + 1][
+            x] == '#' and (
                 level[y - 2][x] == '.' or level[y - 2][x] == '@' or level[y - 2][x] == '&') and (
                 level[y - 1][x] == '.' or level[y - 1][x] == '@' or level[y - 1][x] == '&'):
             player.move(x, y - 3)
-        elif level[y + 1][x] == '#' and (level[y - 2][x] == '.' or level[y - 2][x] == '@' or level[y - 2][x] == '&') and (
+        elif level[y + 1][x] == '#' and (
+                level[y - 2][x] == '.' or level[y - 2][x] == '@' or level[y - 2][x] == '&') and (
                 level[y - 1][x] == '.' or level[y - 1][x] == '@' or level[y - 1][x] == '&') and level[y + 1][x] == '#':
             player.move(x, y - 2)
         elif (level[y - 1][x] == '.' or level[y - 1][x] == '@' or level[y - 1][x] == '&') and level[y + 1][x] == '#':
@@ -132,22 +141,26 @@ def move_map(player, movement):
     if movement == 'down':
         if level[y + 1][x] == '.' or level[y + 1][x] == '@' or level[y + 1][x] == '&' or level[y + 1][x] == '!':
             if level[y + 1][x] == '!':
+                game_music.stop()
                 start_screen()
             else:
                 player.move(x, y + 1)
     if movement == 'left':
         if level[y][x - 1] == '.' or level[y][x - 1] == '@' or level[y][x - 1] == '&' or level[y][x - 1] == '!':
             if level[y][x - 1] == '!':
+                game_music.stop()
                 start_screen()
             else:
                 player.move(x - 1, y)
     if movement == 'right':
         if level[y][x + 1] == '.' or level[y][x + 1] == '@' or level[y][x + 1] == '&' or level[y][x + 1] == '!':
             if level[y][x + 1] == '!':
+                game_music.stop()
                 start_screen()
             else:
                 player.move(x + 1, y)
     if level[y][x] == '&':
+        game_music.stop()
         start_screen()
 
 
@@ -155,19 +168,20 @@ def generate_level(level):
     new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
-            if y != 0:
-                if level[y][x] == '.':
-                    Tile('empty', x, y)
-                elif level[y][x] == '#':
-                    Tile('wall', x, y)
-                    # добавим спрайт в группу
-                elif level[y][x] == '@':
-                    Tile('empty', x, y)
-                    new_player = Player(x, y)
-                elif level[y][x] == '&':
-                    Tile('door', x, y)
-                elif level[y][x] == '!':
-                    Tile('ship', x, y)
+            if level[y][x] == '.':
+                Tile('empty', x, y)
+            elif level[y][x] == '#':
+                Tile('wall', x, y)
+                # добавим спрайт в группу
+            elif level[y][x] == '@':
+                Tile('empty', x, y)
+                new_player = Player(x, y)
+            elif level[y][x] == '&':
+                Tile('empty', x, y)
+                Tile('door', x, y)
+            elif level[y][x] == '!':
+                Tile('empty', x, y)
+                Tile('ship', x, y)
     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 
@@ -183,6 +197,12 @@ pygame.time.set_timer(run_event, run_delay)
 run_shift_delay = 300
 run_shift_event = pygame.USEREVENT + 3
 pygame.time.set_timer(run_shift_event, run_shift_delay)
+live_time = 0
+second_delay = 1000
+second_event = pygame.USEREVENT + 4
+pygame.time.set_timer(second_event, second_delay)
+game_music = pygame.mixer.Sound('data/game.mp3')
+game_music.play(-1)
 while running:
     for event in pygame.event.get():
         keys = pygame.key.get_pressed()
@@ -190,6 +210,8 @@ while running:
             running = False
         if event.type == fall_event:
             move_map(player, 'down')
+        if event.type == second_event:
+            live_time += 1
         if keys[pygame.K_LSHIFT] == 1 and keys[pygame.K_d] == 1 and event.type == run_shift_event:
             move_map(player, 'right')
         if keys[pygame.K_LSHIFT] == 1 and keys[pygame.K_a] == 1 and event.type == run_shift_event:
@@ -205,6 +227,9 @@ while running:
     screen.fill((0, 0, 0))
     all_sprites.draw(screen)
     player_group.draw(screen)
+    font = pygame.font.Font(None, 50)
+    text = font.render(f'Прошло {live_time} секунд', True, (100, 255, 100))
+    screen.blit(text, (50, 50))
     pygame.display.flip()
-    clock.tick(500)
+    clock.tick(FPS)
 pygame.quit()
