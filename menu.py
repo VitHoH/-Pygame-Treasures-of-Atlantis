@@ -3,7 +3,8 @@ from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QMainWin
 from PyQt6.QtGui import QFont, QFontDatabase
 import pygame
 from game import Game
-
+import os
+import sqlite3
 
 
 
@@ -15,6 +16,22 @@ class Menu(QMainWindow):
         self.levels_music.play(-1)
         super().__init__()
         self.initUI()
+        if not os.path.isfile('data/records.sqlite'):
+            con = sqlite3.connect("data/records.sqlite")
+
+            # Создание курсора
+            cur = con.cursor()
+            cur.execute("""CREATE TABLE records (
+    one   INTEGER,
+    two   INTEGER,
+    three INTEGER,
+    four  INTEGER,
+    five  INTEGER
+);""")
+            cur.execute("""INSERT INTO records (one, two, three, four, five)
+    VALUES (999999999999, 999999999999, 99999999999999999999999, 99999999999999999999, 9999999999999999999)""")
+            con.commit()
+            con.close()
         QFontDatabase.addApplicationFont('supermario286rusbylyajka.otf')
         self.centralwidget = QWidget()
         self.setCentralWidget(self.centralwidget)

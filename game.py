@@ -1,6 +1,6 @@
 import os
 import sys
-
+import sqlite3
 import pygame
 
 pygame.display.init()
@@ -181,7 +181,7 @@ class Game:
             intro_rect.x = 10
             text_coord += intro_rect.height
             self.screen.blit(string_rendered, intro_rect)
-
+        self.live_time = 0
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -194,8 +194,8 @@ class Game:
 
     def winner_screen(self):
 
-        intro_text = ['']
-
+        intro_text = [f'Вы прошли 5 уровень за {self.live_time} секунд']
+        intro_text.append('ВЫ ПРОШЛИ ИГРУ!!!')
         fon = pygame.transform.scale(load_image('fon.jpg'), (self.WIDTH, self.HEIGHT))
         self.screen.blit(fon, (0, 0))
         font = pygame.font.Font(None, 30)
@@ -209,6 +209,50 @@ class Game:
             text_coord += intro_rect.height
             self.screen.blit(string_rendered, intro_rect)
 
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.KEYDOWN or \
+                        event.type == pygame.MOUSEBUTTONDOWN:
+                    return  # начинаем игру
+            pygame.display.flip()
+            self.clock.tick(self.FPS)
+
+    def complete_lvl(self):
+        intro_text = ['Поздравляем!', f'Вы прошли {self.level_number} уровень за {self.live_time} секунд']
+        con = sqlite3.connect("data/records.sqlite")
+
+        # Создание курсора
+        cur = con.cursor()
+        level_in_english = {
+            1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five'
+        }
+        # Выполнение запроса и получение всех результатов
+        result = cur.execute(f"""SELECT {level_in_english[self.level_number]} FROM records""").fetchone()
+        con.close()
+        print(result)
+        if result[0] > self.live_time:
+            con = sqlite3.connect("data/records.sqlite")
+            cur = con.cursor()
+            intro_text.append('У вас новый рекорд')
+            cur.execute(f"""UPDATE records
+                            SET {level_in_english[self.level_number]} = ?""", (self.live_time, ))
+            con.commit()
+            con.close()
+        fon = pygame.transform.scale(load_image('fon.jpg'), (self.WIDTH, self.HEIGHT))
+        self.screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 30)
+        text_coord = 50
+        for line in intro_text:
+            string_rendered = font.render(line, 1, pygame.Color('black'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 10
+            text_coord += intro_rect.height
+            self.screen.blit(string_rendered, intro_rect)
+        self.live_time = 0
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -284,6 +328,7 @@ class Game:
                     player.move(x + 1, y)
         if self.level[y][x] == '&':
             self.level_number += 1
+            self.complete_lvl()
             self.run()
         if self.level[y][x + 1] == '*':
             self.music1.stop()
@@ -329,15 +374,6 @@ class Game:
                 keys = pygame.key.get_pressed()
                 if event.type == self.second_event:
                     self.live_time += 1
-                    font = pygame.font.Font(None, 50)
-                    text = font.render(str(self.live_time), True, (255, 100, 100))
-                    text_x = 25
-                    text_y = 50
-                    text_w = text.get_width()
-                    text_h = text.get_height()
-                    screen.blit(text, (text_x, text_y))
-                    pygame.draw.rect(screen, (255, 0, 0), (text_x - 10, text_y - 10,
-                                                           text_w + 20, text_h + 20), 1)
                 if event.type == pygame.QUIT:
                     self.running = False
                 if event.type == self.fall_event:
@@ -364,6 +400,10 @@ class Game:
             self.screen.blit(self.sky, (0, 0))
             all_sprites.draw(self.screen)
             player_group.draw(self.screen)
+            font = pygame.font.Font(None, 50)
+            text = font.render(f'Прошло {self.live_time} секунд', True, (255, 100, 100))
+            screen.blit(text, (50, 50))
+            pygame.display.flip()
             pygame.display.flip()
             self.clock.tick(50)
         pygame.quit()
