@@ -107,11 +107,14 @@ class Game:
         self.run_shift_delay = 300
         self.run_shift_event = pygame.USEREVENT + 3
         pygame.time.set_timer(self.run_shift_event, self.run_shift_delay)
+        self.second_delay = 1000
+        self.second_event = pygame.USEREVENT + 4
+        pygame.time.set_timer(self.second_event, self.second_delay)
         self.music1 = pygame.mixer.Sound('music1.mp3')
         self.music2 = pygame.mixer.Sound('music2.mp3')
         self.music3 = pygame.mixer.Sound('music3.mp3')
         self.total = 1
-
+        self.live_time = 0
         self.sky = pygame.image.load('sky.jpg')
 
     def start_screen(self):
@@ -134,7 +137,8 @@ class Game:
             "",
             "Движение вперед [D]",
             "Движение назад [A]",
-            "Прыжок [Enter]",
+            "Прыжок [SPACE]",
+            "Ускорение [Left Shift]"
             "",
             "Для запуска уровня нажмите [Enter]"
         ]
@@ -163,7 +167,6 @@ class Game:
             self.clock.tick(self.FPS)
 
     def nextgame_screen(self):
-        a = f'Количество попыток: {self.total}'
         intro_text = []
 
         fon = pygame.transform.scale(load_image('fon2.jpg'), (self.WIDTH, self.HEIGHT))
@@ -320,9 +323,21 @@ class Game:
         self.level = load_level(level)
         self.player, self.level_x, self.level_y = self.generate_level(self.level)
 
+
         while self.running:
             for event in pygame.event.get():
                 keys = pygame.key.get_pressed()
+                if event.type == self.second_event:
+                    self.live_time += 1
+                    font = pygame.font.Font(None, 50)
+                    text = font.render(str(self.live_time), True, (255, 100, 100))
+                    text_x = 25
+                    text_y = 50
+                    text_w = text.get_width()
+                    text_h = text.get_height()
+                    screen.blit(text, (text_x, text_y))
+                    pygame.draw.rect(screen, (255, 0, 0), (text_x - 10, text_y - 10,
+                                                           text_w + 20, text_h + 20), 1)
                 if event.type == pygame.QUIT:
                     self.running = False
                 if event.type == self.fall_event:
@@ -338,9 +353,6 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.move_map(self.player, 'up')
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_t:
-                        continue
             keys = pygame.key.get_pressed()
             if keys[pygame.K_d] == 1:
                 self.player.image = load_image('right_mario.png')
