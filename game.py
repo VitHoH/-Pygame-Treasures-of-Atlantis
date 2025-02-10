@@ -193,8 +193,27 @@ class Game:
             self.clock.tick(self.FPS)
 
     def winner_screen(self):
-
+        self.level_number += 1
         intro_text = [f'Вы прошли 5 уровень за {self.live_time} секунд']
+        con = sqlite3.connect("data/records.sqlite")
+
+        # Создание курсора
+        cur = con.cursor()
+        level_in_english = {
+            1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five'
+        }
+        # Выполнение запроса и получение всех результатов
+        result = cur.execute(f"""SELECT {level_in_english[self.level_number]} FROM records""").fetchone()
+        con.close()
+        print(result)
+        if result[0] > self.live_time:
+            con = sqlite3.connect("data/records.sqlite")
+            cur = con.cursor()
+            intro_text.append('У вас новый рекорд')
+            cur.execute(f"""UPDATE records
+                                    SET {level_in_english[self.level_number]} = ?""", (self.live_time,))
+            con.commit()
+            con.close()
         intro_text.append('ВЫ ПРОШЛИ ИГРУ!!!')
         fon = pygame.transform.scale(load_image('fon.jpg'), (self.WIDTH, self.HEIGHT))
         self.screen.blit(fon, (0, 0))
@@ -231,7 +250,6 @@ class Game:
         # Выполнение запроса и получение всех результатов
         result = cur.execute(f"""SELECT {level_in_english[self.level_number]} FROM records""").fetchone()
         con.close()
-        print(result)
         if result[0] > self.live_time:
             con = sqlite3.connect("data/records.sqlite")
             cur = con.cursor()
