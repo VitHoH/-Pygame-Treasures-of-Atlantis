@@ -205,7 +205,6 @@ class Game:
         # Выполнение запроса и получение всех результатов
         result = cur.execute(f"""SELECT {level_in_english[self.level_number]} FROM records""").fetchone()
         con.close()
-        print(result)
         if result[0] > self.live_time:
             con = sqlite3.connect("data/records.sqlite")
             cur = con.cursor()
